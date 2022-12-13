@@ -14,12 +14,12 @@ class Codic
     @api_key = api_key || ENV['CODICAPI']
   end
 
-  def camerCase()
+  def camerCase(sheetUrl)
     # config.jsonを読み込んでセッションを確立
     session = GoogleDrive::Session.from_config("config.json")
 
     # スプレッドシートをURLで取得
-    sp = session.spreadsheet_by_url("https://docs.google.com/spreadsheets/d/1jUXw8bpImtGylGy0O7tWdu25L4T0i7AjNUl6SGHcysM/edit#gid=1388734309")
+    sp = session.spreadsheet_by_url(sheetUrl)
 
     # "シート1"という名前のワークシートを取得
     ws1 = sp.worksheet_by_title("DBレイアウト")
@@ -28,29 +28,30 @@ class Codic
     array = [];
 
     for var in 8..ws1.num_rows do
-      puts var
       if ws1[var,2].blank? then
         break
       end
      array.push(ws1[var,2])
     end
 
-    for i in 7..array.length do
+    for i in 0..array.length do
       word = array[i]
       i+=1
       casing = 'c'
-      ws2[i,1] = translate(word, casing)
+      if ws2[i,1].blank? then
+        ws2[i,1] = translate(word, casing)
+      end
     end
     ws1.save
     ws2.save
   end
 
-  def createSetter()
+  def createSetter(sheetUrl)
     # config.jsonを読み込んでセッションを確立
     session = GoogleDrive::Session.from_config("config.json")
 
     # スプレッドシートをURLで取得
-    sp = session.spreadsheet_by_url("https://docs.google.com/spreadsheets/d/1jUXw8bpImtGylGy0O7tWdu25L4T0i7AjNUl6SGHcysM/edit#gid=1388734309")
+    sp = session.spreadsheet_by_url(sheetUrl)
 
     # "シート1"という名前のワークシートを取得
     ws3 = sp.worksheet_by_title("翻訳")
@@ -70,19 +71,19 @@ class Codic
         bbb = aaa.upcase + word
         i+=1
         ws4[i,1] = "set#{bbb}();"
-        ws3.save
-        ws4.save
       end
     end
+    ws3.save
+    ws4.save
     puts "createSetter"
   end
 
-  def createData()
+  def createData(sheetUrl)
     # config.jsonを読み込んでセッションを確立
     session = GoogleDrive::Session.from_config("config.json")
 
     # スプレッドシートをURLで取得
-    sp = session.spreadsheet_by_url("https://docs.google.com/spreadsheets/d/1jUXw8bpImtGylGy0O7tWdu25L4T0i7AjNUl6SGHcysM/edit#gid=1388734309")
+    sp = session.spreadsheet_by_url(sheetUrl)
 
     # "シート1"という名前のワークシートを取得
     ws5 = sp.worksheet_by_title("DBレイアウト")
@@ -108,12 +109,108 @@ class Codic
       elsif kata == "NUMBER" then
         kata = "BigDecimal"
       end
-      ws6[i,1] = "/**#{aaa}*/pivate #{kata} #{hensu};"
-      ws5.save
-      ws6.save
+      ws6[j,1] = "/**#{aaa}*/pivate #{kata} #{hensu};"
     end
     puts "createData"
+    ws5.save
+    ws6.save
+  end
 
+  def createTable(sheetUrl)
+    # config.jsonを読み込んでセッションを確立
+    session = GoogleDrive::Session.from_config("config.json")
+
+    # スプレッドシートをURLで取得
+    sp = session.spreadsheet_by_url(sheetUrl)
+
+    # "シート1"という名前のワークシートを取得
+    wsheet1 = sp.worksheet_by_title("DBレイアウト")
+    wsheet2 = sp.worksheet_by_title("TABLE")
+
+    array_koumokuId = [];
+    array_type = [];
+    array_keta1 = [];
+    array_keta2 = [];
+    array_koumokuName = []; 
+
+    for var in 8..wsheet1.num_rows do
+      if wsheet1[var,2].blank? then
+        break
+      end
+      array_koumokuId.push(wsheet1[var,3])
+      array_type.push(wsheet1[var,4])
+      array_keta1.push(wsheet1[var,5])
+      array_keta2.push(wsheet1[var,6])
+      array_koumokuName.push(wsheet1[var,2])
+    end
+
+    for i in 0..array_koumokuName.length do
+      if i == 0 then
+        aaa = wsheet1[6,1]
+        wsheet2[1,1]="CREATE TABLE [ IF NOT EXISTS ] #{aaa}( "
+      end
+      if array_type[i] == "VARCHAR2" then
+        array_type[i] = "VARCHAR"
+      elsif array_type[i] == "DATE" then
+        array_type[i] = "TIMESTAMP WITH TIME ZONE(0)"
+      elsif array_type[i] == "NUMBER" then
+        array_type[i] = "NUMERIC"
+      end
+      j=i+2
+      wsheet2[j,1] = "#{array_koumokuId[i]} #{array_type[i]}"
+      if array_keta1[i].blank? then
+        wsheet2[j,1] = wsheet2[j,1]+","
+      elsif array_keta2[i].blank? then
+        wsheet2[j,1] = wsheet2[j,1]+"(#{array_keta1[i]}),"
+      elsif true then
+        keta1 = array_keta1[i].to_i
+        keta2 = array_keta2[i].to_i
+        keta = keta1 + keta2
+        wsheet2[j,1] = wsheet2[j,1]+"(#{keta},#{array_keta2[i]}),"
+      end
+      i+=1
+      if i == array_koumokuName.length then
+        wsheet2[j,1].slice!(wsheet2[j,1].length-1)
+        wsheet2[j,1] = wsheet2[j,1] +");"
+      end
+    end
+    wsheet1.save
+    wsheet2.save
+  end
+
+  
+  def createComment(sheetUrl)
+    # config.jsonを読み込んでセッションを確立
+    session = GoogleDrive::Session.from_config("config.json")
+
+    # スプレッドシートをURLで取得
+    sp = session.spreadsheet_by_url(sheetUrl)
+
+    # "シート1"という名前のワークシートを取得
+    wsheet3 = sp.worksheet_by_title("DBレイアウト")
+    wsheet4 = sp.worksheet_by_title("TABLE")
+
+    koumokuName = [];
+    koumokuId = [];
+
+    for var in 8..wsheet3.num_rows do
+     koumokuName.push(wsheet3[var,2])
+     koumokuId.push(wsheet3[var,3])
+     if wsheet3[var,2].blank? then
+      break
+     end
+    end
+
+    for i in 0..koumokuName.length-1 do
+      if i == 0 then
+        wsheet4[1,5] = "COMMENT ON TABLE #{wsheet3[6,1]} IS '#{wsheet3[6,3]}';"
+        next
+      end
+      j=i+1
+      k=i-1
+      wsheet4[j,5] = "COMMENT ON COLUMN #{wsheet3[6,1]}.#{koumokuId[k]} IS '#{koumokuName[k]}';"
+    end
+    wsheet4.save
   end
 
   private
@@ -156,8 +253,14 @@ class Codic
 end
 
 codic = Codic.new
-codic.camerCase()
-codic.createData()
-codic.createSetter()
+puts "スプレットシートのURLを入力"
+input = gets
+codic.camerCase(input.chomp)
+codic.createData(input.chomp)
+codic.createTable(input.chomp)
+codic.createComment(input.chomp)
+
+
+
 
 
