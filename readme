@@ -1,0 +1,49 @@
+＜手順＞
+1.rubyの環境構築
+
+コマンドプロンプトで
+sudo apt-get install ruby
+を実行
+
+
+2.gemのgoogle-drive-rubyをインストール
+
+コマンドプロンプトで
+sudo gem install google_drive
+を実行
+
+
+3.Google APIs のクライアントIDとクライアントシークレット取得
+下記URLでログイン
+https://console.cloud.google.com/apis/credentials
+
+以下のリンクで手順を確認してAPI（googleDriveとスプレットシートのやつ）の有効化まで行う
+https://virment.com/google-drive-api-activate/
+
+4.config.jsonの作成
+取得済のクライアントIDとクライアントシークレットをconfig.jsonの該当箇所に貼り付け
+{
+"client_id": "クライアントID",
+"client_secret": "クライアントシークレット"
+}
+
+
+5.ターミナルで「ruby ファイル名」で実行できる
+スプレットシートのA列にカラム名（日本語）、B列に型（DBレイアウトのやつ）を張り付けて
+camerCase.rb⇒createSetter.rb⇒CreateDate.rbの順で実行
+※CodicAPIは一時間に100件の翻訳しかできない（XX時00分でリセットできるようになるっぽい）ためcamerCase.rbの実行後最高で１時間後でないとcreateSetter.rbが使えないという使いずらい仕様になってます、、、
+改良すれば文字列操作してcamerCase.rbの結果からセッター作ることも可能かもです、、、
+
+6.初回のみトークン発行が必要
+初回実行時には出力にURLが出てきてトークンを要求されるのでURLにとんで
+ログインしてトークンもらってターミナルに張り付けてエンターキー押せば完了
+
+
+＜参考サイト＞
+https://virment.com/ruby-google-drive-readwrite/
+
+https://yurupro.cloud/2643/
+
+https://techblog.gmo-ap.jp/2018/12/04/ruby_google_sheets_drive/
+
+https://qiita.com/koshilife/items/4baf1804c585690fc295
